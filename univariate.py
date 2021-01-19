@@ -74,14 +74,27 @@ def whisker_outlier_imputer(data):
 
 
 def num_outlier(data, criteria = 'gaussian', n=3):
-    """Returns the number of outliers present in the data based on the criteria chosen
+    """Returns the number of outliers present in the data based on the criteria chosen.
+    Returns 3 value list (low,high,total)
 
     Args:
         data (pd.Series): data volumn to count the number of outliers in.
         criteria (str, optional): Criteria to calculate number of outliers; 'gaussian' for emperical rule, 'whisker' for whisker criteria. Defaults to 'gaussian'.
         n (int, optional): n times standard deviation to consider, only applicable for 'gaussian'. Defaults to 3.
     """
-    
+    if criteria == "gaussian":
+        low = len(data[data < (data.mean()-(n*data.std()))])
+        high = len(data[data > (data.mean()+(n*data.std()))])
+        tot = low+high
+        return low, high, tot
+
+    elif criteria == 'whisker':
+        low = len(data[data < data.quantile(0.25)-(1.5*(data.quantile(0.75)-data.quantile(0.25)))])
+        high = len(data[data > data.quantile(0.75)+(1.5*(data.quantile(0.75)-data.quantile(0.25)))])
+        tot = low+high
+        return low, high, tot
+    else:
+        print("mentioned criteria not available, check documentation for available criterion")
 
 
 
@@ -89,7 +102,9 @@ def num_outlier(data, criteria = 'gaussian', n=3):
 
 
 
-def uva_numerical(data, var_group, dpi=100):
+
+
+def numerical_summary(data, var_group, dpi=100):
     """
     Summary:
     Custom function for easy and efficient analysis of numerical univariate analysis
@@ -117,17 +132,20 @@ def uva_numerical(data, var_group, dpi=100):
       # calculating points of standard deviation
       points = stats['mean'] - stats['standard_deviation'], stats['mean'] + stats['standard_deviation']
 
+      #calculating number of outliers
+      outlier_low, outlier_high, outlier_total = num_outlier(data[i],criteria='gaussian',n=3)
+
       #Plotting kde with every informationj+1
       plt.figure(figsize=(25,5), dpi=dpi)       
       plt.subplot(1,4,1)
       sns.kdeplot(data[i], shade=True)
-      sns.lineplot(points, [0,0], color = 'black', label = "std_dev")
-      sns.scatterplot([stats['min'],stats['max']], [0,0], color = 'orange', label = "min/max")
-      sns.scatterplot([stats['mean']], [0], color = 'red', label = "mean")
-      sns.scatterplot([stats['median']], [0], color = 'blue', label = "median")
+      sns.lineplot(points, [0,0], color = 'black', label = "std_dev", dashes=True, linewidth=3)
+      sns.scatterplot([stats['min'],stats['max']], [0,0], color = 'orange', label = "min/max", s=100)
+      sns.scatterplot([stats['mean']], [0], color = 'red', label = "mean", s=100)
+      sns.scatterplot([stats['median']], [0], color = 'blue', label = "median", s=100)
       plt.xlabel('{}'.format(i), fontsize = 16)
       plt.ylabel('density', fontsize=16)
-      plt.title('Including Outliers\nstd_dev = {}; kurtosis = {};\nskew = {}; range = {}\nmean = {}; median = {}'.format(
+      plt.title('Including Outliers\nstd_dev = {}; kurtosis = {};\nskew = {}; (min,max,range) = {}\nmean = {}; median = {}\n outliers (low,high,total) = {}'.format(
           round(stats['standard_deviation'],2),
           round(stats['kurtosis'],2),
           round(stats['kurtosis'],2), 
@@ -135,7 +153,8 @@ def uva_numerical(data, var_group, dpi=100):
           round(stats['max'],2),
           round(stats['range'],2)),
           round(stats['mean'],2),
-          round(stats['median'],2)),
+          round(stats['median'],2),
+          (outlier_low,outlier_high,outlier_total)),
           fontsize=14)
 
 
@@ -149,13 +168,13 @@ def uva_numerical(data, var_group, dpi=100):
       #Plotting kde (without outliers) with every information
       plt.subplot(1,4,2)
       sns.kdeplot(tmp, shade=True)
-      sns.lineplot(points, [0,0], color = 'black', label = "std_dev")
-      sns.scatterplot([tmp_stats['min'],tmp_stats['max']], [0,0], color = 'orange', label = "min/max")
-      sns.scatterplot([tmp_stats['mean']], [0], color = 'red', label = "mean")
-      sns.scatterplot([tmp_stats['median']], [0], color = 'blue', label = "median")
+      sns.lineplot(points, [0,0], color = 'black', label = "std_dev", dashes=True, linewidth=3)
+      sns.scatterplot([tmp_stats['min'],tmp_stats['max']], [0,0], color = 'orange', label = "min/max", s=100)
+      sns.scatterplot([tmp_stats['mean']], [0], color = 'red', label = "mean", s=100)
+      sns.scatterplot([tmp_stats['median']], [0], color = 'blue', label = "median", s=100)
       plt.xlabel('{}'.format(i), fontsize = 16)
       plt.ylabel('density', fontsize=16)
-      plt.title('Including Outliers\nstd_dev = {}; kurtosis = {};\nskew = {}; range = {}\nmean = {}; median = {}'.format(
+      plt.title('Excluding Outliers\nstd_dev = {}; kurtosis = {};\nskew = {}; (min,max,range) = {}\nmean = {}; median = {}\n outliers_REMOVED (low,high,total) = {}'.format(
           round(tmp_stats['standard_deviation'],2),
           round(tmp_stats['kurtosis'],2),
           round(tmp_stats['skewness'],2), 
@@ -163,25 +182,25 @@ def uva_numerical(data, var_group, dpi=100):
           round(tmp_stats['max'],2),
           round(tmp_stats['range'],2)),
           round(tmp_stats['mean'],2),
-          round(tmp_stats['median'],2)),
+          round(tmp_stats['median'],2),
+          (outlier_low,outlier_high,outlier_total)),
           fontsize=14)
 
       
       ## box plot with outliers
     
       # Calculating Number of Outliers
-      outlier_high = len(data[i][data[i] > stats['whisker_high']])
-      outlier_low = len(data[i][data[i] < stats['whisker_low']])
+      outlier_low, outlier_high, outlier_total = num_outlier(data[i], criteria='whisker')
 
       #Plotting the variable with every information
       plt.subplot(1,4,3)
       sns.boxplot(data[i], orient="v")
       plt.ylabel('{}'.format(i), fontsize=16)
-      plt.title('Including Outliers\nIQR = {}; Median = {} \n 2nd,3rd  quartile = {};\n Outlier (low/high) = {} \n'.format(
+      plt.title('Including Outliers\nIQR = {}; Median = {} \n 2nd,3rd  quartile = {};\n Outlier (low,high,total) = {} \n'.format(
                          round(stats['IQR'],2),
                          round(stats['median'],2),
                          (round(stats['quant25'],2),round(stats['quant75'],2)),
-                         (outlier_low,outlier_high)
+                         (outlier_low,outlier_high, outlier_total )
                          ),fontsize=14)
       
       ## box plot with imputed outliers  
@@ -192,11 +211,11 @@ def uva_numerical(data, var_group, dpi=100):
       plt.subplot(1,4,4)
       sns.boxplot(tmp, orient="v")
       plt.ylabel('{}'.format(i), fontsize=16)
-      plt.title('Excluding Outliers\nIQR = {}; Median = {} \n 2nd,3rd  quartile = {};\n Outlier (low/high) = {} \n'.format(
+      plt.title('Excluding Outliers\nIQR = {}; Median = {} \n 2nd,3rd  quartile = {};\n Outlier (low,high,total) = {} \n'.format(
                          round(stats['IQR'],2),
                          round(stats['median'],2),
                          (round(stats['quant25'],2),round(stats['quant75'],2)),
-                         (outlier_low,outlier_high)
+                         (outlier_low,outlier_high,outlier_total)
                          ),fontsize=14)
       plt.tight_layout()
       plt.show()
@@ -209,7 +228,7 @@ def uva_numerical(data, var_group, dpi=100):
 
 
 
-def uva_categorical(data, var_group, max_uni=5, dpi=100, include_missing=False):
+def categorical_summary(data, var_group, max_uni=5, dpi=100, include_missing=False):
     """Custom function for easy visualisation/analysis of Categorical Variables
 
     Args:
@@ -237,12 +256,12 @@ def uva_categorical(data, var_group, max_uni=5, dpi=100, include_missing=False):
         # include missing values?
         if include_missing==False:
             tmp = data[cat].value_counts(normalize=True).map(lambda x:round(x*100,3))
-            title1 = '%frequency\n{}'.format(tmp)
-            title2 = 'Categories = {}'.format(len(tmp))
+            title1 = '%frequency = {}\n'.format(tmp)
+            title2 = 'Categories = {}\n'.format(len(tmp))
         else:
             tmp = data[cat].value_counts(dropna=False, normalize=True).map(lambda x:round(x*100,3))
-            title1 = '%frequency (including missing if any)\n{}'.format(tmp)
-            title2 = 'Categories (including missing if any)\n{}'.format(len(tmp))
+            title1 = '%frequency (including missing if any) = {}\n'.format(tmp)
+            title2 = 'Categories (including missing if any) = {}\n'.format(len(tmp))
 
         # plotting
         plt.barh([str(i) for i in tmp.index], tmp)

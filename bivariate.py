@@ -38,11 +38,6 @@ def TwoSampZ(X1, X2, sigma1, sigma2, N1, N2):
 
 
 
-
-
-
-
-
 def TwoSampT(X1, X2, sd1, sd2, n1, n2):
     """Calculates 2 Sample T-test, Returns p-value
       Args:
@@ -92,27 +87,29 @@ def bva_cont_cat(data, cont, cat, print_table=True):
 
     # categorywise mean barplot
     plt.subplot(1,3,1)
-    plt.bar(tmp1.index[:], tmp1[:])
-    plt.xlabel('{}'.format(cat),fontsize=14)
-    plt.ylabel('Mean', fontsize=14)
-    if print_table==True:
-        plt.title("{}".format(tmp1))
-    else:
-        plt.title("Mean age w.r.t education", fontsize=14)
+    # plt.bar(tmp1.index[:], tmp1[:])
+    # plt.xlabel('{}'.format(cat),fontsize=14)
+    # plt.ylabel('Mean', fontsize=14)
+    # if print_table==True:
+    #     plt.title("{}".format(tmp1))
+    # else:
+    #     plt.title("Mean age w.r.t education", fontsize=14)
+    sns.barplot(x=cont, y=cat, data=data, estimator=np.mean,orient='h')
 
     # categorywise median barplot
     plt.subplot(1,3,2)
-    plt.bar(tmp2.index[:], tmp2[:])
-    plt.xlabel('{}'.format(cat),fontsize=14)
-    plt.ylabel('Median', fontsize=14)
-    if print_table==True:
-        plt.title("{}".format(tmp2))
-    else:
-        plt.title("Median age w.r.t education", fontsize=14)
+    # plt.bar(tmp2.index[:], tmp2[:])
+    # plt.xlabel('{}'.format(cat),fontsize=14)
+    # plt.ylabel('Median', fontsize=14)
+    # if print_table==True:
+    #     plt.title("{}".format(tmp2))
+    # else:
+    #     plt.title("Median age w.r.t education", fontsize=14)
+    sns.barplot(x=cont, y=cat, data=data, estimator=np.median, orient='h', ci=None)
 
     # categorywise distribution boxplot
     plt.subplot(1,3,3)
-    sns.boxplot(x=cat, y=cont, data=data)
+    sns.boxplot(x=cont, y=cat, data=data, orient='h')
     plt.title("{} distribution w.r.t. {}".format(cont,cat), fontsize=14)
     plt.xlabel('{}'.format(cat),fontsize=14)
     plt.ylabel('{}'.format(cont), fontsize=14)
